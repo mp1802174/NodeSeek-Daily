@@ -26,7 +26,7 @@ def click_sign_icon(driver):
         # 使用更精确的选择器定位签到图标
         #sign_icon = WebDriverWait(driver, 30).until(
         #    EC.presence_of_element_located((By.XPATH, "//span[@title='签到']"))
-        )
+        #)
         #print("找到签到图标，准备点击...")
         
         # 确保元素可见和可点击
