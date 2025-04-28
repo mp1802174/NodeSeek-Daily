@@ -155,4 +155,4 @@ if __name__ == "__main__":
         print("浏览器初始化失败")
         exit(1)
     click_sign_icon(driver)
-    print("脚本执行完成")
+    print("脚本执行完成 ")
