@@ -19,66 +19,84 @@ headless = os.environ.get("HEADLESS", "true").lower() == "true"
 
 def click_sign_icon(driver):
     """
-    尝试点击签到图标和试试手气按钮的通用方法
+    尝试点击签到图标/链接，然后点击奖励按钮的通用方法
     """
     try:
-        #print("开始查找签到图标...")
-        # 使用更精确的选择器定位签到图标
-        #sign_icon = WebDriverWait(driver, 30).until(
-        #    EC.presence_of_element_located((By.XPATH, "//span[@title='签到']"))
-        #)
-        #print("找到签到图标，准备点击...")
-        
-        # 确保元素可见和可点击
-        #driver.execute_script("arguments[0].scrollIntoView(true);", sign_icon)
-        #time.sleep(0.5)
-        
-        # 打印元素信息
-        #print(f"签到图标元素: {sign_icon.get_attribute('outerHTML')}")
-        
-        # 尝试点击
-        #try:
-        #    sign_icon.click()
-        #    print("签到图标点击成功")
-        #except Exception as click_error:
-        #    print(f"点击失败，尝试使用 JavaScript 点击: {str(click_error)}")
-        #    driver.execute_script("arguments[0].click();", sign_icon)
-        
-        #print("等待页面跳转...")
-        #time.sleep(5)
-        
-        # 打印当前URL
-        #print(f"当前页面URL: {driver.current_url}")
-        
-        # 点击"试试手气"按钮
+        print("步骤 1: 查找并点击签到入口...")
+        # 使用更灵活的 XPath 查找签到入口 (链接, 按钮, 或带标题的 span)
+        sign_icon_xpath = "//a[contains(text(),'签到')] | //button[contains(text(),'签到')] | //span[@title='签到']"
+        print(f"  使用 XPath: {sign_icon_xpath}")
+        sign_icon = WebDriverWait(driver, 30).until(
+            EC.element_to_be_clickable((By.XPATH, sign_icon_xpath))
+        )
+        print(f"  找到签到入口元素: Tag={sign_icon.tag_name}, Text='{sign_icon.text}'")
+
+        # 滚动到视图并点击
+        driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", sign_icon)
+        time.sleep(1) # 短暂等待滚动完成
+
+        try:
+            sign_icon.click()
+            print("  签到入口点击成功。")
+        except Exception as click_error:
+            print(f"  直接点击失败，尝试使用 JavaScript 点击: {str(click_error)}")
+            driver.execute_script("arguments[0].click();", sign_icon)
+            print("  JavaScript 点击尝试完成。")
+
+        # --- 等待签到操作完成 ---
+        # 签到后可能会出现一个模态框(modal)或者页面状态改变
+        # 需要等待足够长的时间让奖励按钮出现
+        print("步骤 2: 等待签到确认/奖励按钮出现 (等待最多 10 秒)...")
+        time.sleep(5) # 初始等待，可以根据实际情况调整或替换为 WebDriverWait
+
+        print(f"  当前页面 URL (点击签到入口后): {driver.current_url}")
+
+        # --- 点击奖励按钮 ---
+        print("步骤 3: 查找并点击奖励按钮 ('试试手气' 或 '鸡腿 x 5')...")
         try:
             click_button = None
-            if ns_random:
-                click_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), '试试手气')]"))
+            lucky_button_xpath = "//button[contains(text(), '试试手气')]"
+            fixed_reward_xpath = "//button[contains(text(), '鸡腿 x 5')]" # 确认文字是否准确
+
+            # 增加等待时间，因为按钮可能在模态框中延迟出现
+            wait_time_for_reward = 10
+
+            if ns_random == "true": # 检查环境变量字符串
+                print(f"  NS_RANDOM is true. 查找 '{lucky_button_xpath}'...")
+                click_button = WebDriverWait(driver, wait_time_for_reward).until(
+                    EC.element_to_be_clickable((By.XPATH, lucky_button_xpath))
                 )
             else:
-                click_button = WebDriverWait(driver, 5).until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), '鸡腿 x 5')]"))
+                print(f"  NS_RANDOM is false. 查找 '{fixed_reward_xpath}'...")
+                click_button = WebDriverWait(driver, wait_time_for_reward).until(
+                    EC.element_to_be_clickable((By.XPATH, fixed_reward_xpath))
                 )
-            
+
+            print(f"  找到奖励按钮: '{click_button.text}'")
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center', inline: 'nearest'});", click_button)
+            time.sleep(0.5)
             click_button.click()
-            print("完成试试手气点击")
+            print("  奖励按钮点击成功。")
+            time.sleep(3) # 等待点击效果完成
+
         except Exception as lucky_error:
-            print(f"试试手气按钮点击失败或者签到过了: {str(lucky_error)}")
-            
-        return True
-        
+            # 提供更具体的错误信息
+            print(f"  未能点击奖励按钮。可能原因：已签到、签到失败、按钮未出现、选择器错误或超时。")
+            print(f"  详细错误: {type(lucky_error).__name__}: {str(lucky_error)}")
+            # 在这里不直接返回 False，因为主签到点击可能已成功
+
+        print("签到流程尝试完毕。")
+        return True # 认为主要流程尝试了即可返回 True
+
     except Exception as e:
-        print(f"签到过程中出错:")
+        print(f"签到主流程出错:")
         print(f"错误类型: {type(e).__name__}")
         print(f"错误信息: {str(e)}")
         print(f"当前页面URL: {driver.current_url}")
-        print(f"当前页面源码片段: {driver.page_source[:500]}...")
+        # print(f"当前页面源码片段: {driver.page_source[:500]}...") # 需要时取消注释
         print("详细错误信息:")
         traceback.print_exc()
-        return False
-
+        return False # 主流程出错则返回 False
 def setup_driver_and_cookies():
     """
     初始化浏览器并设置cookie的通用方法
