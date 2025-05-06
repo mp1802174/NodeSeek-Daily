@@ -108,7 +108,25 @@ def setup_driver_and_cookies():
             options.add_argument('--user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
         
         print("正在启动Chrome...")
-        driver = uc.Chrome(options=options)
+        # ========== START: Replacement Code Block ==========
+        # This block replaces the original `driver = uc.Chrome(options=options)` line
+        # It handles using the correct browser path in GitHub Actions
+
+        chrome_executable_path = '/opt/hostedtoolcache/setup-chrome/chromium/stable/x64/chrome'
+        print(f"检查 Chrome 可执行文件路径: {chrome_executable_path}")
+
+        # Check if running inside GitHub Actions and the path exists
+        if os.environ.get("GITHUB_ACTIONS") == "true" and os.path.exists(chrome_executable_path):
+            print(f"在 GitHub Actions 环境中运行，并找到 Chrome 路径。强制使用该路径。")
+            # Use browser_executable_path argument
+            driver = uc.Chrome(browser_executable_path=chrome_executable_path, options=options)
+        else:
+            # Fallback to default behavior if not in Actions or path not found
+            if os.environ.get("GITHUB_ACTIONS") == "true":
+                print(f"警告: 在 GitHub Actions 环境中运行，但未找到指定路径的 Chrome: {chrome_executable_path}。")
+            print("未使用 GitHub Actions 或未找到指定 Chrome 路径。使用 uc 默认浏览器检测。")
+            driver = uc.Chrome(options=options) # Original call as fallback
+        # ========== END: Replacement Code Block ==========
         
         if headless:
             # 执行 JavaScript 来修改 webdriver 标记
