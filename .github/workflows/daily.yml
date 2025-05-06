@@ -6,6 +6,7 @@ on:
       - main
   schedule:
     - cron: '00 16 * * *'  # UTC 16:00，即北京时间 00:00
+  workflow_dispatch: # Allow manual trigger
 
 jobs:
   run-nodeseek-daily:
@@ -13,21 +14,22 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
-      
+        uses: actions/checkout@v3 # Keeping original version as requested
+
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2 # Keeping original version as requested
         with:
           python-version: '3.11.8'
 
-      - name: Install Chrome and Xvfb
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y chromium-browser chromium-chromedriver xvfb
-          echo "Chrome version:"
-          chromium-browser --version
-          echo "ChromeDriver version:"
-          chromedriver --version
+      # ========== START: MODIFICATION ==========
+      # REMOVED the step "Install Chrome and Xvfb" which used apt-get
+
+      # ADDED this step to correctly install matching Chrome and ChromeDriver
+      - name: Set up Chrome and ChromeDriver
+        uses: browser-actions/setup-chrome@latest
+        with:
+          chrome-version: stable # Installs stable Chrome and matching ChromeDriver
+      # ========== END: MODIFICATION ==========
 
       - name: Install Python dependencies
         run: |
@@ -39,5 +41,6 @@ jobs:
           NS_COOKIE: ${{ secrets.NS_COOKIE }}
           NS_RANDOM: ${{ secrets.NS_RANDOM }}
           HEADLESS: "true"
+          # GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }} # Make sure GEMINI_API_KEY is passed if your script uses it now
         run: |
-          python nodeseek_daily.py
+          python nodeseek_daily.py # Assuming your script file is named nodeseek_daily.py
